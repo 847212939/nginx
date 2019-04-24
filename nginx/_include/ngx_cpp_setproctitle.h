@@ -19,7 +19,7 @@ public:
 public:
     int     m_argvcount;
     int     m_argc;
-    char ** m_argv;
+    char    **m_argv;
 private:
     char *  m_p_environ;
     size_t  m_environ_length;

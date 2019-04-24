@@ -9,6 +9,7 @@ public:
     CNgx_cpp_daemon():m_fd(-1){};
     ~CNgx_cpp_daemon()
     {
+        
         if(m_fd)
             close(m_fd);
     };

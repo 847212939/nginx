@@ -10,13 +10,13 @@ CNgx_cpp_signal::SNgx_signal_t CNgx_cpp_signal::ngx_signals[]=
     {SIGCHLD,   "SIGCHLD",          ngx_signal_handler},
     {SIGQUIT,   "SIGQUIT",          ngx_signal_handler},
     {SIGIO,     "SIGIO",            ngx_signal_handler},
+    //{SIGSEGV,   "SIGSEGV",          ngx_signal_handler},
     {SIGSYS,    "SIGSYS, SIG_IGN",  NULL              },
     {0,          NULL,              NULL              }
 };
 
 bool CNgx_cpp_signal::ngx_init_signals()
 {
-    CNgx_cpp_main::m_ngx_log.ngx_log_error_core(NGX_LOG_ERR,0,"0 到这了");
     int i=-1;
     struct sigaction sa;
     while(CNgx_cpp_signal::ngx_signals[++i].signo)
@@ -26,7 +26,7 @@ bool CNgx_cpp_signal::ngx_init_signals()
             sa.sa_sigaction=ngx_signals[i].handler;
             sa.sa_flags=SA_SIGINFO;
         }
-        else
+        else 
         {
             sa.sa_handler=SIG_IGN;
         }
@@ -34,7 +34,8 @@ bool CNgx_cpp_signal::ngx_init_signals()
         sigemptyset(&sa.sa_mask);
         if(-1==sigaction(ngx_signals[i].signo,&sa,nullptr))
         {
-            CNgx_cpp_main::m_ngx_log.ngx_log_error_core(NGX_LOG_EMERG,errno,"sigaction(%s) failed",ngx_signals[i].signame);
+            CNgx_cpp_main::m_ngx_log.ngx_log_error_core(NGX_LOG_EMERG,errno,
+                "sigaction(%s) failed",ngx_signals[i].signame);
             return false;
         }
     }
@@ -66,7 +67,11 @@ void CNgx_cpp_signal::ngx_signal_handler(int signo, siginfo_t * siginfo, void * 
     }
     else if(CNgx_cpp_main::m_ngx_proctype==NGX_PROCESS_WORKER)
     {
-        
+        if(signo == SIGSEGV)
+        {
+            CNgx_cpp_main::m_ngx_log.ngx_log_error_core(0,errno,"111111111111111");
+            return ;
+        }
     }
     else
     {
@@ -74,12 +79,14 @@ void CNgx_cpp_signal::ngx_signal_handler(int signo, siginfo_t * siginfo, void * 
     }
     if(siginfo && siginfo->si_pid)
     {
-        CNgx_cpp_main::m_ngx_log.ngx_log_error_core(NGX_LOG_NOTICE,0,"signal %d (%s) received from %P%s", 
+        CNgx_cpp_main::m_ngx_log.ngx_log_error_core(NGX_LOG_NOTICE,0,
+            "signal %d (%s) received from %P%s", 
         signo, ngx_signals[i].signame, siginfo->si_pid, action); 
     }
     else
     {
-        CNgx_cpp_main::m_ngx_log.ngx_log_error_core(NGX_LOG_NOTICE,0,"signal %d (%s) received %s",
+        CNgx_cpp_main::m_ngx_log.ngx_log_error_core(NGX_LOG_NOTICE,0,
+            "signal %d (%s) received %s",
         signo, ngx_signals[i].signame, action);
     }
     if(signo==SIGCHLD)
@@ -130,11 +137,13 @@ void CNgx_cpp_signal::ngx_process_get_status()
         one = 1;  //标记waitpid()返回了正常的返回值
         if(WTERMSIG(status))  //获取使子进程终止的信号编号
         {
-            CNgx_cpp_main::m_ngx_log.ngx_log_error_core(NGX_LOG_ALERT,0,"pid = %P exited on signal %d!",pid,WTERMSIG(status)); //获取使子进程终止的信号编号
+            CNgx_cpp_main::m_ngx_log.ngx_log_error_core(NGX_LOG_ALERT,0,
+                "pid = %P exited on signal %d!",pid,WTERMSIG(status)); //获取使子进程终止的信号编号
         }
         else
         {
-            CNgx_cpp_main::m_ngx_log.ngx_log_error_core(NGX_LOG_NOTICE,0,"pid = %P exited with code %d!",pid,WEXITSTATUS(status)); //WEXITSTATUS()获取子进程传递给exit或者_exit参数的低八位
+            CNgx_cpp_main::m_ngx_log.ngx_log_error_core(NGX_LOG_NOTICE,0,
+                "pid = %P exited with code %d!",pid,WEXITSTATUS(status)); //WEXITSTATUS()获取子进程传递给exit或者_exit参数的低八位
         }
     }
     return;

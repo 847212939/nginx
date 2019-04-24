@@ -1,6 +1,5 @@
 #pragma once
 #include "ngx_cpp_global.h"
-#include <vector>
 
 /*设计模式之单例类*/
 class CNgx_cpp_config

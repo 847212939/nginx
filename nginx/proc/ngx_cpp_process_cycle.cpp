@@ -17,7 +17,8 @@ void CNgx_cpp_process_cycle::ngx_master_process_cycle()
     sigaddset(&set, SIGALRM),   sigaddset(&set, SIGWINCH);
     if(-1==sigprocmask(SIG_BLOCK,&set,nullptr))
     {
-        CNgx_cpp_main::m_ngx_log.ngx_log_error_core(NGX_LOG_EMERG,errno,"ngx_master_process_cycle()函数中的sigprocmask()错误");
+        CNgx_cpp_main::m_ngx_log.ngx_log_error_core(NGX_LOG_EMERG,errno,
+            "ngx_master_process_cycle()函数中的sigprocmask()错误");
         return ;
     }
     int     nLen=0;
@@ -42,9 +43,10 @@ void CNgx_cpp_process_cycle::ngx_master_process_cycle()
     sigemptyset(&set);
     while(1)
     {
+        /*原子操作 阻塞到直到有信号过来*/
         sigsuspend(&set);
-        sleep(2);
-        cout << 0 <<endl;
+        if(CNgx_cpp_main::m_ngx_exit)
+            break;
     }
 
 }
@@ -62,12 +64,14 @@ void CNgx_cpp_process_cycle::ngx_worker_process_cycle(int inum,const char *pproc
 {
     ngx_worker_process_init(inum);
     m_title.ngx_setitile(pprocname);
-    CNgx_cpp_main::m_ngx_log.ngx_log_error_core(NGX_LOG_NOTICE,0,"子进程[%P]创建。。。。",m_childid);
+    CNgx_cpp_main::m_ngx_log.ngx_log_error_core(NGX_LOG_NOTICE,0,"子进程[%P]创建",m_childid);
     CNgx_cpp_main::m_ngx_proctype=NGX_PROCESS_WORKER;
+    int i = 0;
     while(1)
     {
-        sleep(2);
-        cout << inum <<endl;
+        ngx_process_events_and_timers();
+        if(CNgx_cpp_main::m_ngx_exit)
+            break;
     }
 }
 
@@ -81,7 +85,8 @@ int  CNgx_cpp_process_cycle::ngx_spawn_process(int threadnums,const char *pprocn
         ngx_worker_process_cycle(threadnums,pprocname);
         return m_childid;
     case -1:
-        CNgx_cpp_main::m_ngx_log.ngx_log_error_core(NGX_LOG_EMERG,errno,"CNgx_cpp_process_cycle::ngx_worker_process_cycle()中的fork()出错");
+        CNgx_cpp_main::m_ngx_log.ngx_log_error_core(NGX_LOG_EMERG,errno,
+            "CNgx_cpp_process_cycle::ngx_worker_process_cycle()中的fork()出错");
         return -1;
     default:
         m_parentid=getpid();
@@ -96,8 +101,29 @@ void CNgx_cpp_process_cycle::ngx_worker_process_init(int inum)
     sigemptyset(&set);
     if(-1==sigprocmask(SIG_SETMASK,&set,nullptr))
     {
-        CNgx_cpp_main::m_ngx_log.ngx_log_error_core(NGX_LOG_EMERG,errno,"CNgx_cpp_process_cycle::ngx_worker_process_init()sigprocmask()出错");
+        CNgx_cpp_main::m_ngx_log.ngx_log_error_core(NGX_LOG_EMERG,errno,
+            "CNgx_cpp_process_cycle::ngx_worker_process_init()sigprocmask()出错");
+        return ;
     }
+    CNgx_cpp_config * pconfig=CNgx_cpp_config::get_m_pconfig();
+    int nThread = pconfig->get_def_int("ThreadPoolCount",1);
+    CNgx_cpp_main::m_ngx_thread.ngx_create_threadpool(nThread);
+    sleep(1);
+    if(!CNgx_cpp_main::m_ngx_logic.ngx_initialize())
+    {
+        return ;
+    }
+    if(!CNgx_cpp_main::m_ngx_logic.ngx_epoll_init())
+    {
+        CNgx_cpp_main::m_ngx_log.ngx_log_error_core(NGX_LOG_EMERG,errno,
+            "CNgx_cpp_process_cycle::ngx_worker_process_init()出错");
+        return ;
+    }
+}
+
+void CNgx_cpp_process_cycle::ngx_process_events_and_timers()
+{
+    CNgx_cpp_main::m_ngx_logic.ngx_epoll_process_events(-1);
 }
 
 void CNgx_cpp_process_cycle::ngx_set_m_title(CNgx_cpp_setproctitle & title)

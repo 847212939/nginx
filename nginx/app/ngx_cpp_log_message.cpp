@@ -111,13 +111,12 @@ void CNgx_cpp_log_message::ngx_log_stderr(int err, const char *fmt, ...)
     if (p >= (last - 1))
         p = (last - 1) - 1;
     *p++ = '\n';
-    if(m_log.fd>STDERR_FILENO)
+    if(m_log.fd > STDERR_FILENO)
     {
         ngx_log_error_core(NGX_LOG_NOTICE,err,(const char *)errstr);
         return ;
     }
     write(STDERR_FILENO,errstr,p - errstr);
-    
 }
 
 /*把错误码对应的字符串组合到buf中一起打印到日志文件中去*/
@@ -319,6 +318,18 @@ u_char *CNgx_cpp_log_message::ngx_slprintf(u_char *buf, u_char *last, const char
     va_start(args, fmt); //使args指向起始的参数
     p = ngx_vslprintf(buf, last, fmt, args);
     va_end(args);        //释放args   
+    return p;
+}
+
+
+u_char * CNgx_cpp_log_message::ngx_snprintf(u_char *buf, size_t max, const char *fmt, ...)
+{
+    u_char   *p;
+    va_list   args;
+
+    va_start(args, fmt);
+    p = ngx_vslprintf(buf, buf + max, fmt, args);
+    va_end(args);
     return p;
 }
 

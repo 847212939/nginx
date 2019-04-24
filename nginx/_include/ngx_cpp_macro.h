@@ -11,7 +11,8 @@
 
 /*日志相关--------------------*/
 /*我们把日志一共分成八个等级【级别从高到低，数字最小的级别最高，数字大的级别最低】，以方便管理、显示、过滤等等*/
-#define NGX_LOG_STDERR            0    /*控制台错误【stderr】：最高级别日志，日志的内容不再写入log参数指定的文件，而是会直接将日志输出到标准错误设备比如控制台屏幕*/
+#define NGX_LOG_STDERR            0    /*控制台错误【stderr】：最高级别日志，
+                                        日志的内容不再写入log参数指定的文件，而是会直接将日志输出到标准错误设备比如控制台屏幕*/
 #define NGX_LOG_EMERG             1    /*紧急 【emerg】*/
 #define NGX_LOG_ALERT             2    /*警戒 【alert】*/
 #define NGX_LOG_CRIT              3    /*严重 【crit】*/
@@ -28,3 +29,9 @@
 #define NGX_PROCESS_WORKER        1    /*worker 管理进程*/
 
 #define NGX_LISTEN_BACKLOG        511  /*已完成队列的最大值*/
+
+#define NGX_MAX_EPOLL_EVENTS      512  /*epoll_wait取出来的最大的值*/
+
+#define NGX_LOGIN                 0X1234        /*登录CMD*/
+#define NGX_REGISTER              (0x1234+1)    /*注册CMD*/
+#define NGX_HEAERBEAT             (0x1234+2)    /*心跳CMD*/
